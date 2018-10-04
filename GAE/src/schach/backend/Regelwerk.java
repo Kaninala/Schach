@@ -7,14 +7,21 @@ import schach.daten.SpielEnum;
 import schach.daten.ZugEnum;
 
 public final class Regelwerk {
-	
+
+	/**
+	 * Aufstellen des Spielfeldes am anfang.
+	 */
 	public static void setStartbelegung(Belegung b){
+		/*
+		Belegt für den anfang die Baueren
+		 */
 		for (int i=1;i<=8;i++){
 			b.addFigur(new Figur(FigurEnum.Bauer,true),i,2); // weisse Bauern
 			b.addFigur(new Figur(FigurEnum.Bauer,false),i,7); // schwarze Bauern
 		}
 		int j=1;
 		boolean weiss=true;
+		// Die anderen Figuren werden belegt
 		for (int i=1;i<=2;i++){ // restliche Figuren
 			b.addFigur(new Figur(FigurEnum.Turm,weiss),"a"+j);
 			b.addFigur(new Figur(FigurEnum.Springer,weiss),"b"+j);
@@ -29,19 +36,36 @@ public final class Regelwerk {
 		} 
 	}
 
+	/**
+	 * Gibt an ob der Angreifer die gegnerische Figur schlagen kann.
+	 * @param b
+	 * @param posAngreifer
+	 * @param posOpfer
+	 * @return
+	 */
 	public static boolean kannSchlagen(Belegung b,String posAngreifer,String posOpfer) {
+		// Wenn akktuelle Position leer ist
 		if (b==null) return false;
+		// Wenn Angreifer eine gültige Figur ist
 		if ((posAngreifer==null)||(posAngreifer.length()!=2)) return false;
+		// Wenn Opfer eine gültige Figur ist und gibt einen erlaubten Zug ohne Angriff zu
 		if ((posOpfer==null)||(posOpfer.length()!=2)) return false;
 		HashSet<Zug> zuege=getErlaubteZuegeOhneSchach(b,posAngreifer,false);
+		// Wenn kein weiterer Zug möglich ist
 		if ((zuege==null)||(zuege.size()==0)) return false;
+
 		for(Zug zug:zuege){
 			if (posOpfer.equals(zug.getNach())) return true;
 		}
 		return false;
 	}
-	
-	// moegliche Zuege der Figur f incl. Beachtung, dass der Spieler von f nicht selbst ins Schach geraten kann
+
+	/**
+	 * Moegliche Zuege der Figur f incl. Beachtung, dass der Spieler von f nicht selbst ins Schach geraten kann.
+	 * @param b
+	 * @param f
+	 * @return
+	 */
 	public static HashSet<Zug> getErlaubteZuege(Belegung b,Figur f){
 		HashSet<Zug> zuege=new HashSet<Zug>();
 		if ((b==null)||(f==null)||(f.isGeschlagen())) return zuege;
@@ -61,15 +85,26 @@ public final class Regelwerk {
 		return zuege;
 	}
 
-	
-
-	// moegliche Zuege der Figur f ohne Beachtung, ob der Spieler von f selbst ins Schach geraet
+	/**
+	 *  Moegliche Zuege der Figur f ohne Beachtung, ob der Spieler von f selbst ins Schach geraet
+	 * @param b
+	 * @param position
+	 * @param inclRochadenCheck
+	 * @return
+	 */
 	private static HashSet<Zug> getErlaubteZuegeOhneSchach(Belegung b,String position,boolean inclRochadenCheck){
 		Figur f=b.getFigur(position);
 		if (f==null) return new HashSet<Zug>();
 		return getErlaubteZuegeOhneSchach(b,f,inclRochadenCheck);
 	}
 
+	/**
+	 * Gibt alle erlaubten Zuege mit gewaelter Figur wieder die ohne Angriff erfolgen kann
+	 * @param b
+	 * @param f
+	 * @param inclRochadenCheck
+	 * @return
+	 */
 	private static HashSet<Zug> getErlaubteZuegeOhneSchach(Belegung b,Figur f,boolean inclRochadenCheck){
 		HashSet<Zug> zuege=new HashSet<Zug>();
 		switch (f.getTyp()){
@@ -97,6 +132,12 @@ public final class Regelwerk {
 		return zuege;
 	}
 
+	/**
+	 * Gibt vom gewaeltem Bauer die alle erlaubten Zuege wieder
+	 * @param b
+	 * @param f
+	 * @return
+	 */
 	private static HashSet<Zug> getErlaubteZuegeOhneSchachBauer(Belegung b,Figur f){
 		HashSet<Zug> zuege=new HashSet<Zug>();
 		String posStart=f.getPosition();
@@ -108,11 +149,13 @@ public final class Regelwerk {
 		int richtung=1;
 		if (f.isSchwarz()) richtung=-1;
 
-		posZiel=Belegung.toSchachNotation(x,y+richtung*1); // 1 Schritt
+		posZiel=Belegung.toSchachNotation(x,y+richtung*1); // erster Schritt
+
 		if ((posZiel!=null)&&(!b.hasFigur(posZiel))){
 			Zug z=new Zug(posStart,x,y+richtung*1);
 			zuege.add(z);
 		}
+
 		if(!f.isBereitsBewegt()){ // 2 Schritte
 			posZiel=Belegung.toSchachNotation(x,y+richtung*2);
 			posDazwischen=Belegung.toSchachNotation(x,y+richtung*1);
@@ -123,6 +166,7 @@ public final class Regelwerk {
 				}
 			}
 		}
+
 		if (x>1){ // links schlagen
 			posZiel=Belegung.toSchachNotation(x-1,y+richtung*1);
 			if ((posZiel!=null)&&(b.hasGegnerFigur(posZiel,f.isWeiss()))){
@@ -137,7 +181,9 @@ public final class Regelwerk {
 				zuege.add(z);			
 			}
 		}
+
 		// en passant moeglich?
+		// Überprüfung vom Doppelsprung an der anfangs Position
 		if ((b.getBemerkung()!=null)&&(ZugEnum.BauerDoppelschritt.equals(b.getBemerkung()))){
 			int koordinatenAlt[]=Belegung.toArrayNotation(b.getNach());
 			if (koordinatenAlt[1]==y){
@@ -153,13 +199,21 @@ public final class Regelwerk {
 		}
 		return zuege;
 	}
-	
+
+	/**
+	 *  Gibt vom gewaeltem Laeufer die alle erlaubten Zuege wieder
+	 * @param b
+	 * @param f
+	 * @return
+	 */
 	private static HashSet<Zug> getErlaubteZuegeOhneSchachLaeufer(Belegung b,Figur f){
 		HashSet<Zug> felder=new HashSet<Zug>();
 		String posStart=f.getPosition();
 		int x=Belegung.toArrayNotation(posStart)[0];
 		int y=Belegung.toArrayNotation(posStart)[1];
 		int i,j;
+
+		//addZug ist für Figuren die Mehrere Schritte laufen können
 		for (i=x+1,j=y+1;((i<=8)&&(j<=8));i++,j++){
 			if (!addZug(b,posStart,felder,i,j)) break;
 		}
@@ -175,12 +229,20 @@ public final class Regelwerk {
 		return felder;
 	}
 
+	/**
+	 * Gibt vom gewaeltem Turm die alle erlaubten Zuege wieder
+	 * @param b
+	 * @param f
+	 * @return
+	 */
 	private static HashSet<Zug> getErlaubteZuegeOhneSchachTurm(Belegung b,Figur f){
 		HashSet<Zug> felder=new HashSet<Zug>();
 		String posStart=f.getPosition();
 		int x=Belegung.toArrayNotation(posStart)[0];
 		int y=Belegung.toArrayNotation(posStart)[1];
 		int i;
+
+		//addZug ist für Figuren die Mehrere Schritte laufen können
 		for (i=y+1;i<=8;i++){
 			if (!addZug(b,posStart,felder,x,i)) break;
 		}
@@ -196,12 +258,20 @@ public final class Regelwerk {
 		return felder;
 	}
 
+	/**
+	 * Gibt vom gewaeltem Dame die alle erlaubten Zuege wieder
+	 * @param b
+	 * @param f
+	 * @return
+	 */
 	private static HashSet<Zug> getErlaubteZuegeOhneSchachDame(Belegung b,Figur f){
 		HashSet<Zug> felder=new HashSet<Zug>();
 		String posStart=f.getPosition();
 		int x=Belegung.toArrayNotation(posStart)[0];
 		int y=Belegung.toArrayNotation(posStart)[1];
 		int i,j;
+
+		//addZug ist für Figuren die Mehrere Schritte laufen können
 		for (i=y+1;i<=8;i++){
 			if (!addZug(b,posStart,felder,x,i)) break;
 		}
@@ -228,12 +298,19 @@ public final class Regelwerk {
 		}
 		return felder;
 	}
-	
+
+	/**
+	 * Gibt vom gewaeltem Springer die alle erlaubten Zuege wieder
+	 * @param b
+	 * @param f
+	 * @return
+	 */
 	private static HashSet<Zug> getErlaubteZuegeOhneSchachSpringer(Belegung b,Figur f){
 		HashSet<Zug> felder=new HashSet<Zug>();
 		String posStart=f.getPosition();
 		int x=Belegung.toArrayNotation(posStart)[0];
 		int y=Belegung.toArrayNotation(posStart)[1];
+
 		addZug(b,posStart,felder,x+2,y+1);		
 		addZug(b,posStart,felder,x+2,y-1);		
 		addZug(b,posStart,felder,x+1,y+2);		
@@ -244,12 +321,20 @@ public final class Regelwerk {
 		addZug(b,posStart,felder,x-2,y-1);		
 		return felder;
 	}
-	
+
+	/**
+	 * Gibt vom gewaeltem König die alle erlaubten Zuege wieder mit der Möglichkeit Rochade
+	 * @param b
+	 * @param f
+	 * @param inclRochadenCheck
+	 * @return
+	 */
 	private static HashSet<Zug> getErlaubteZuegeOhneSchachKoenig(Belegung b,Figur f,boolean inclRochadenCheck){
 		HashSet<Zug> felder=new HashSet<Zug>();
 		String posStart=f.getPosition();
 		int x=Belegung.toArrayNotation(posStart)[0];
 		int y=Belegung.toArrayNotation(posStart)[1];
+
 		addZug(b,posStart,felder,x-1,y+1);		
 		addZug(b,posStart,felder,x,y+1);		
 		addZug(b,posStart,felder,x+1,y+1);		
@@ -260,6 +345,7 @@ public final class Regelwerk {
 		addZug(b,posStart,felder,x+1,y-1);		
 		
 		// Rochade
+		// bei dem König und Turm einer Farbe bewegt werden (Doppelzug)
 		Figur turm;
 		if (((!f.isBereitsBewegt()) && (inclRochadenCheck))){ // ich darf mich nicht bereits bewegt haben
 			boolean binImSchach=false;
@@ -315,13 +401,20 @@ public final class Regelwerk {
 		return felder;
 	}
 
+	/**
+	 *Zeigt ob die Rochade moeglichkeit vom Gegner bedroht wird
+	 * @param b
+	 * @param postion
+	 * @param durchWeiss
+	 * @return
+	 */
 	private static boolean isPositionBedrohtFuerRochade(Belegung b,String postion,boolean durchWeiss) {
 		if ((postion==null)||(postion.length()!=2)) return false;
 		HashSet<Zug> bedroht=new HashSet<Zug>();
 		for (Figur fGegner:b.getFigurenAufBrett(durchWeiss)){
 			HashSet<Zug> bedrohtVonFigur=new HashSet<Zug>(); 
 			if (fGegner.getTyp().equals(FigurEnum.Koenig)){
-				// gegnerischer Koenig wird separat behaldelt, um Endlos-Rekursion im Rochaden-Check zu verhindern
+				//gegnerischer Koenig wird separat behaldelt, um Endlos-Rekursion im Rochaden-Check zu verhindern
 				if (fGegner.isBereitsBewegt()) bedrohtVonFigur=b.getErlaubteZuege(fGegner.getPosition());
 			}
 			else{
