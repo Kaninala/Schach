@@ -13,7 +13,7 @@ import schach.daten.*;
 public class Spiel {
 	private D_Spiel daten;
 	private ArrayList<Belegung> belegungen;
-
+	// inital constructor.
 	public Spiel(){
 		daten=new D_Spiel();
 		belegungen=new ArrayList<Belegung>();
